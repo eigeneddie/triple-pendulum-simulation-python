@@ -4,8 +4,6 @@ The main program to run is "triplePendulumUTAMA.py".
 
 No dedicated libraries for multibody-dynamics are used.
 
-System model looks a bit like this. 
-
-Both joint B and C have torsional springs and rotational dampers as force elements.
+System model looks a bit like what's shown in the image below. Both joints B and C have a torsional spring and rotational damper.
 
 ![Image of Triple Pendulum Model](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/triplePendulum.png)
