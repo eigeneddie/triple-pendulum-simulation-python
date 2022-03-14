@@ -1,7 +1,7 @@
 #equations for constraints
 import numpy        as np
-from   calcModuleTP   import ATransformMatrixTHETA as A_Theta, link2index
-from   calcModuleTP   import ATransformMatrix      as A_i
+from   modules.calcModuleTP   import ATransformMatrixTHETA as A_Theta, link2index
+from   modules.calcModuleTP   import ATransformMatrix      as A_i
 
 def constraintEquation(r1A, r1B, r2B, r2C, r3C):
     

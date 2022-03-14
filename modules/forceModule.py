@@ -1,5 +1,5 @@
 import numpy as np
-from calcModuleTP import link2index as l2i
+from modules.calcModuleTP import link2index as l2i
 
 def torSpring(kr, qi, i, j, theta0):
     thetai = qi[l2i(i, "theta")]

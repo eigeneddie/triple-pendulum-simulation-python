@@ -1,14 +1,14 @@
 # Multidynamics program for educational purposes
-# Copyright (c) 2021, Edgar B. Sutawika
+# Copyright (c) 2021, Edgar Sutawika
 
 # import necessary modules
 import numpy as np  
 import matplotlib.pyplot  as plt
 
-import calcModuleTP       as calMod
-import constraintModuleTP as conMod
-import forceModule        as fMod
-from calcModuleTP import link2index as l2i, prettyMatVect2
+from modules import calcModuleTP       as calMod
+from modules import constraintModuleTP as conMod
+from modules import forceModule        as fMod
+from modules.calcModuleTP import link2index as l2i, prettyMatVect2
 
 # 1. === USER INPUT PARAMETERS (GLOBAL VARIABLES) ======
 # ======================================================
@@ -20,7 +20,9 @@ krB, crB, krC, crC           = 1.0, 1.0, 1.0, 1.0 # [Nm/rad], [Nms/rad]
 
 # initial conditions
 theta1Init, theta2Init, theta3Init = np.pi/4, np.pi/3, np.pi/2 #[rad]
- 
+#=======================================================
+#=======================================================
+
 # POINTS OF INTEREST, LOCAL JOINTS
 u_bar_1A  = np.array([ [0], [ link1/2] ])
 u_bar_1B  = np.array([ [0], [-link1/2] ])
@@ -31,8 +33,6 @@ u_bar_3C  = np.array([ [0], [ link3/2] ])
 # stopping criteria, gravity
 epsilon = 0.000000000001
 gravity = 9.81 # [m/s^2]
-#=======================================================
-#=======================================================
 
 # Derived parameters
 inertiaJ1 = calMod.inertiaRod(mass1, link1)
