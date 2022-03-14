@@ -1,10 +1,33 @@
-# Multidynamics program for educational purposes
-# Copyright (c) 2021, Edgar Sutawika
+# Copyright (c) 2022, EBS/MakotoYu95
+# Multidynamics program for educational purposes.
+# 
+# The scripts simulates a TRIPLE PENDULUM given the following user input
+# 1. Length of all 3 links [m]
+# 2. Mass of all 3 links [kg]
+# 3. Simulation time settings [s]
+# 4. External force elements (see README.md for system model)
+# 5. Initial conditions for each independent coordinates (in this case, 
+#    the angle of all links w.r.t. the vertical line) [rad]
+# 
+# You may play with these variables on the USER INPUT PARAMETERS 
+# section (lines just after importing modules).
+#
+# To run the script, simply enter the 
+# following usage to the terminal: 
+# 
+# python main_tp.py
+#
+# This script is a demonstration for computational dynamics
+# from scratch, which means no specific libraries are used. 
+# Learning this may give you a basic understanding and appreciation
+# to how stable libraries with multibody dynamics physics engine actually work.
+# 
+# Happy hacking!!
+#
 
 # import necessary modules
 import numpy as np  
 import matplotlib.pyplot  as plt
-
 from modules import calcModuleTP       as calMod
 from modules import constraintModuleTP as conMod
 from modules import forceModule        as fMod
