@@ -1,7 +1,7 @@
 # TRIPLE PENDULUM SIMULATION WITH PYTHON
 This script is a demonstration for computational dynamics
-from scratch, which means no specific libraries are used: just numpy, 
-matplotlib.pyplot, a minor help from pandas to inspect matrices, and 
+from scratch, which means no specific libraries are used: just `numpy`, 
+`matplotlib.pyplot`, a minor help from `pandas` to inspect matrices, and 
 a direct implementation of multibody dynamics.
 
 Understanding dynamics and its complexities can give you
@@ -79,6 +79,6 @@ Note: the angular position of each link are the independent coordinates. This is
 ![force_y](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/join-reaction-force-y.png)
 
 
-### e. X-coordinate position of link COG (Rx)
+### e. X-coordinate position of link COG w.r.t. global coordinate (Rx)
 
 ![Rx](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/X-coordinate-of-link-centers.png)
