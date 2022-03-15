@@ -16,7 +16,7 @@
  To run the script, simply enter the 
  following usage to the terminal: 
  
- python main_tp.py
+    python main_tp.py
 
  This script is a demonstration for computational dynamics
  from scratch, which means no specific libraries are used: just 
