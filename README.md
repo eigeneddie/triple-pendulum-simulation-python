@@ -14,6 +14,7 @@ System model looks a bit like what is shown in the image below. Both joints B an
 
 ![Image of Triple Pendulum Model](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/triplePendulum.png)
 
+## How to play with the code
  The scripts simulates a TRIPLE PENDULUM given the following user input
  1. Length of all 3 links [m]
  2. Mass of all 3 links [kg]
@@ -28,8 +29,8 @@ System model looks a bit like what is shown in the image below. Both joints B an
  To run the script, simply enter the 
  following usage to the terminal: 
  
-    python main_tp.py
+ `python main_tp.py`
  
- Happy hacking!!
+
 
 
