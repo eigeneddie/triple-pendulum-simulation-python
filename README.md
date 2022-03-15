@@ -12,7 +12,7 @@ coded to the specified model on this README.md.
 
 System model looks a bit like what is shown in the image below. Both joints B and C have a torsional spring and rotational damper.
 
-![Image of Triple Pendulum Model](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/triplePendulum.png)
+![Image of Triple Pendulum Model](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/triplePendulum1.png)
 
 ## How to play with the code
  The scripts simulates a TRIPLE PENDULUM given the following user input
