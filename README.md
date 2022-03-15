@@ -41,6 +41,8 @@ The calculation program is based on the augmented dynamics equation form. The pr
 
 ## 3. Example of results. 
 
+Here is an example of the input parameters of the triple pendulum system.
+
 ```
 link1, link2, link3          = 1, 1, 1 # [m]
 mass1, mass2, mass3          = 1.2, 1.2, 2.0 #[kg]
@@ -51,3 +53,32 @@ krB, crB, krC, crC           = 1.0, 1.0, 1.0, 1.0 # [Nm/rad], [Nms/rad]
 theta1Init, theta2Init, theta3Init = np.pi/4, np.pi/3, np.pi/2 #[rad]
 ```
 
+With these parameters, we can evaluate certain variables of interest of the system such as the kinematics (joint velocity, position, etc.) and kinetics (joint reaction forces). 
+
+Below are several examples for the variables of interest after running the script.
+
+### a. Angular position of each link (theta)
+
+Note: the angular position of each link are the independent coordinates. This is a 3-DOF system.
+
+![theta](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/angular-position.png)
+
+
+### b. Angular velocity of each link (omega)
+
+![omega](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/angular-velocity.png)
+
+
+### c. Angular acceleration of each link (alpha)
+
+![alpha](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/angular-acceleration.png)
+
+
+### d. Joint reaction forces on the Y direction (Force_y)
+
+![force_y](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/join-reaction-force-y.png)
+
+
+### e. X-coordinate position of link COG (Rx)
+
+![Rx](https://github.com/eigeneddie/triple-pendulum-simulation-python/blob/main/img/X-coordinate-of-link-centers.png)
