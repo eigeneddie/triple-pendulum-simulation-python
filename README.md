@@ -27,9 +27,7 @@ System model looks a bit like what is shown in the image below. Both joints B an
  section (lines just after importing modules).
 
  To run the script, simply enter the 
- following usage to the terminal: 
- 
- `python main_tp.py`
+ following usage to the terminal: `python main_tp.py`
  
 
 
