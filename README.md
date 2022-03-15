@@ -1,7 +1,7 @@
 # TRIPLE PENDULUM SIMULATION WITH PYTHON
 This script is a demonstration for computational dynamics
 from scratch, which means no specific libraries are used: just numpy, 
-matplotlib.pyplot, a minor help from pandas to inspect matrices), and 
+matplotlib.pyplot, a minor help from pandas to inspect matrices, and 
 a direct implementation of multibody dynamics.
 
 Understanding dynamics and its complexities can give you
