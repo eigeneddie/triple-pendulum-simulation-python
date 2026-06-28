@@ -4,7 +4,7 @@
 > model**. It is the companion to `NOTES.md`: where `NOTES.md` explains the
 > general theory, this file applies it step-by-step to the specific 3-link
 > system until every symbol has a concrete expression you can transcribe into
-> Python. Section numbers in brackets like [§4] point back to `NOTES.md`.
+> Python. Section numbers in brackets like [Section 4] point back to `NOTES.md`.
 >
 > Workflow captured here:
 > **sketch → coordinates → body points → constraints → Jacobian (by hand)
@@ -30,6 +30,60 @@ multipliers `λ`:
 Read it as: *(top row)* Newton's law with the joint reaction forces `C_qᵀλ`
 added; *(bottom row)* the requirement that accelerations keep the joints
 satisfied (`C_q q̈ = Q_d`). Two unknown blocks, two equation blocks.
+
+### Intuition — what this equation is really saying
+
+Forget the matrix for a second. The augmented form is the answer to a very human
+question: **"the links want to fall under gravity, but the joints won't let them
+fly apart — so how does everything actually accelerate this instant?"** Two
+things must be true at once, and the two rows are exactly those two truths.
+
+**Top row — "obey Newton, *plus* whatever force the joints have to apply."**
+A free body would just obey `M q̈ = Q_e` (mass × acceleration = applied force).
+But our links aren't free — they're pinned. The pins must push/pull to hold the
+joints together, and that extra push is `C_qᵀλ`. So the top row is literally
+*Newton's law with an extra "joint force" term whose size we don't yet know*:
+
+```math
+\underbrace{M\ddot q}_{\text{mass}\times\text{accel}} = \underbrace{Q_e}_{\text{gravity, springs}} \;-\; \underbrace{C_q^{\mathsf T}\lambda}_{\text{force the joints exert}}
+```
+
+Think of `λ` as **"how hard each joint is pulling right now"** and `C_qᵀ` as
+**"which direction that pull points."** `C_q` (the Jacobian) already encodes the
+geometry of each joint — its transpose turns a pull-strength `λ` into an actual
+force vector on the bodies. (Why must the joint force have the form `C_qᵀλ`?
+Because a joint can only push *along the directions it constrains* — it does no
+work sliding *along* the allowed motion. That "no free work" idea is D'Alembert's
+principle; see `NOTES.md` Section 7.)
+
+**Bottom row — "and the accelerations must keep the joints closed."**
+The pins are welded shut: point B on link 1 *is* point B on link 2, forever. If
+that's true for all time, it's true for position, velocity, *and* acceleration.
+The position version (`C = 0`) and velocity version (`C_q q̇ = 0`) are already
+guaranteed by how we start and step; the bottom row enforces the **acceleration**
+version, `C_q q̈ = Q_d`. In words: *the accelerations aren't free to be anything —
+they must be exactly the ones that keep the joints from pulling apart or
+crushing together.* `Q_d` is just the leftover centripetal bookkeeping (the
+`ω²r` terms) that comes from the joints rotating (Step 6).
+
+**Why solve them together (the punchline).** Here's the chicken-and-egg that the
+matrix resolves in one shot:
+
+- You can't find the accelerations `q̈` until you know the joint forces `λ`
+  (they appear in Newton's law).
+- You can't find the joint forces `λ` until you know the accelerations `q̈`
+  (the forces are *whatever it takes* to keep `C_q q̈ = Q_d`).
+
+Neither can be computed first. The augmented matrix stacks both requirements and
+solves for `q̈` **and** `λ` **simultaneously** — finding the one acceleration *and*
+the one set of joint forces that are mutually consistent. That's the whole reason
+it's a single bordered system instead of two separate steps.
+
+**A one-line mental model:** *gravity proposes an acceleration; the joints
+veto the parts that would tear them apart; `λ` is the exact strength of that
+veto, and `q̈` is what's left after the veto is applied.* The top row is the
+proposal, the bottom row is the veto, and solving them together is the
+negotiation that happens every timestep.
 
 Every step below is just **producing one of these ingredients** for our specific
 3-link model:
@@ -83,7 +137,7 @@ Text schematic of the same thing:
 - **Bodies:** 3 rigid uniform rods.
 - **Joints:** A (pin to ground), B (revolute), C (revolute) → 3 joints.
 - **Force elements:** gravity (all bodies); torsional spring + rotational damper at B and at C.
-- **Body reference point:** each rod's **center of mass** (mid-length) — chosen so the mass matrix is constant & diagonal (see `NOTES.md` §7 and the COM discussion).
+- **Body reference point:** each rod's **center of mass** (mid-length) — chosen so the mass matrix is constant & diagonal (see `NOTES.md` Section 7 and the COM discussion).
 
 **Expected DOF (sanity check before any math):**
 `DOF = 3·(bodies) − (constraint equations)`.
@@ -92,7 +146,7 @@ The 3 DOF will be the three link angles `θ₁, θ₂, θ₃`.
 
 ---
 
-## Step 1 — Choose generalized coordinates [§1]
+## Step 1 — Choose generalized coordinates [Section 1]
 
 Absolute (Cartesian) coordinates, **3 per body** = COM position + orientation:
 
@@ -104,7 +158,7 @@ Angles `θ_i` measured from the global vertical (world +y), positive CCW.
 
 ---
 
-## Step 2 — Locate the body-fixed joint points `ū` [§2]
+## Step 2 — Locate the body-fixed joint points `ū` [Section 2]
 
 Each rod's COM is at mid-length, so its two ends are `±L/2` along the body's
 local y-axis. List every point that participates in a joint:
@@ -127,7 +181,7 @@ and `sᵢ = sin θᵢ`, `cᵢ = cos θᵢ`.
 
 ---
 
-## Step 3 — Global position of each joint point [§2]
+## Step 3 — Global position of each joint point [Section 2]
 
 Using `rᵢᴾ = Rᵢ + A(θᵢ) ūᵢᴾ` with
 `A(θ) = [[c, −s], [s, c]]`, work out each one (this is the algebra you'd grind on paper):
@@ -161,7 +215,7 @@ whole Jacobian (Step 5) sparse and hand-derivable. Had we tilted the local frame
 arbitrarily, every `ū` would have two nonzero entries and twice the trig.
 
 **2. Put the reference point `R` at the center of mass.**
-Free to place anywhere on the body (see `NOTES.md` §-on-anchors), but the COM is
+Free to place anywhere on the body (see the anchor-choice discussion in `NOTES.md`), but the COM is
 special: it **decouples translation from rotation**, making the mass matrix
 constant and diagonal `diag(m, m, J)` (Step 7) with no velocity-dependent inertia
 terms. Any other anchor is still valid physics but drags coupling terms into `M`.
@@ -177,7 +231,7 @@ The constant vanishes, and so does its contribution to every derivative.
 Using one common reference axis (not joint-relative angles) keeps each `A(θᵢ)`
 independent of the others, so the Jacobian blocks don't chain-multiply. (This is
 the absolute-coordinate choice; it trades more coordinates for simpler, decoupled
-derivatives — see `NOTES.md` §13.)
+derivatives — see `NOTES.md` Section 13.)
 
 **5. Uniform rod ⇒ closed-form inertia `J = mL²/12`.**
 Assuming a slender uniform rod lets the moment of inertia be a one-line formula
@@ -191,7 +245,7 @@ instead of an integral, and centers it at the mid-point (reinforcing #2).
 
 ---
 
-## Step 4 — Write the constraint equations `C(q) = 0` [§3]
+## Step 4 — Write the constraint equations `C(q) = 0` [Section 3]
 
 ### The canonical form first (where every equation below comes from)
 
@@ -263,12 +317,12 @@ So `C = [C₁ … C₆]ᵀ`, `nc = 6`. DOF `= 9 − 6 = 3` ✓ (matches Step 0).
 
 ---
 
-## Step 5 — Derive the Jacobian `C_q` by hand [§4]
+## Step 5 — Derive the Jacobian `C_q` by hand [Section 4]
 
 `C_q = ∂C/∂q` is **6×9**. Differentiate each `Cᵢ` w.r.t. every coordinate.
 Columns ordered `[R_{x1}, R_{y1}, θ₁ | R_{x2}, R_{y2}, θ₂ | R_{x3}, R_{y3}, θ₃]`.
 
-Useful sub-result (this is the `A_θ ū` block from §4):
+Useful sub-result (this is the `A_θ ū` block from Section 4):
 `∂(A(θ)ū)/∂θ = A_θ(θ) ū`, e.g. `∂r₁ᴬ/∂θ₁ = [−a c₁, −a s₁]`.
 
 ```math
@@ -285,7 +339,7 @@ C_q=\begin{bmatrix}
 This is the matrix `constraintModuleTP.py:jacobianMatrix` builds block-by-block.
 Each `±I₂` is a translation block; each trig column is a `±A_θ(θ) ū` block.
 
-**Partition into dependent / independent [§4]:** pick the 3 angles as
+**Partition into dependent / independent [Section 4]:** pick the 3 angles as
 independent. Then:
 - `C_{q_i}` = columns `{θ₁, θ₂, θ₃}` (cols 3, 6, 9) → **6×3**
 - `C_{q_d}` = the other 6 columns (the Cartesian `R`'s) → **6×6** (must be invertible)
@@ -311,13 +365,13 @@ dependent.)
 
 ---
 
-## Step 6 — Velocity & acceleration kinematics; derive `Q_d` [§5–6]
+## Step 6 — Velocity & acceleration kinematics; derive `Q_d` [Sections 5–6]
 
 **Velocity** (differentiate `C=0` once): `C_q q̇ = 0`, so
 `q̇_d = −C_{q_d}⁻¹ C_{q_i} q̇_i`.
 
 **Acceleration** (differentiate again): `C_q q̈ = Q_d`, with the
-quadratic-velocity vector built from the `A_θθ = −A` identity [§6]. For each joint
+quadratic-velocity vector built from the `A_θθ = −A` identity [Section 6]. For each joint
 `Q_d = θ̇ᵢ² A(θᵢ) ūᵢ − θ̇ⱼ² A(θⱼ) ūⱼ` (single body for A). Plugging the points:
 
 ```math
@@ -333,7 +387,7 @@ Stack: `Q_d = [Q_d^A ; Q_d^B ; Q_d^C]` (6×1). Each entry is a centripetal
 
 ---
 
-## Step 7 — Mass matrix `M` [§7]
+## Step 7 — Mass matrix `M` [Section 7]
 
 COM coordinates ⇒ translation/rotation decouple ⇒ constant diagonal **9×9**:
 
@@ -346,7 +400,7 @@ M = \mathrm{diag}(\,m_1, m_1, J_1,\ m_2, m_2, J_2,\ m_3, m_3, J_3\,),
 
 ---
 
-## Step 8 — Generalized forces `Q_e` (9×1) [§8]
+## Step 8 — Generalized forces `Q_e` (9×1) [Section 8]
 
 Start at zero, then add each effect into the right slot.
 
@@ -371,7 +425,7 @@ assembled in `systemEquation`.
 
 ---
 
-## Step 9 — Assemble the augmented equation of motion [§7]
+## Step 9 — Assemble the augmented equation of motion [Section 7]
 
 Combine dynamics (`M q̈ + C_qᵀ λ = Q_e`) with acceleration constraints
 (`C_q q̈ = Q_d`) into one **(n+nc) × (n+nc) = 15×15** linear system:
@@ -384,11 +438,11 @@ Combine dynamics (`M q̈ + C_qᵀ λ = Q_e`) with acceleration constraints
 ```
 
 Solve at each instant for the 9 accelerations `q̈` and 6 multipliers `λ`.
-Joint reaction forces follow from `Q_c = −C_qᵀ λ` [§9]. → `systemEquation`.
+Joint reaction forces follow from `Q_c = −C_qᵀ λ` [Section 9]. → `systemEquation`.
 
 ---
 
-## Step 10 — Solution plan (what the time loop must do) [§5, §10–11]
+## Step 10 — Solution plan (what the time loop must do) [Sections 5, 10–11]
 
 Only `θ₁, θ₂, θ₃` (and their rates) are integrated; everything else is recovered
 from the constraints each step. On paper, decide this order *before* coding:

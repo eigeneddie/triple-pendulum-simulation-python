@@ -75,12 +75,12 @@ motion, differing only in cost and bookkeeping:
 |---|---|---|
 | **Augmented** (this repo) | keep all coords + explicit multipliers `λ` | uniform, easy to assemble, gives reactions free; larger, indefinite system |
 | **Embedded / minimal** | eliminate `λ`, reduce to independent coords (the 3 angles) | small system; messier to derive, loses reaction forces |
-| **Recursive O(n)** (Featherstone) | propagate body-to-body | linear-time; the robotics workhorse (see §13) |
+| **Recursive O(n)** (Featherstone) | propagate body-to-body | linear-time; the robotics workhorse (see Section 13) |
 | **Kane / Gibbs–Appell** | generalized speeds, skip constraint forces | compact; common in spacecraft/robotics |
 | **Hamiltonian** | first-order in position + momentum | structure/energy-preserving integration |
 | **Penalty** | replace hard constraints with stiff springs | no `λ`, trivial to code; stiff, approximate |
 
-§13 then covers the *extensions* of this same machinery (3D, stabilization,
+Section 13 then covers the *extensions* of this same machinery (3D, stabilization,
 flexible bodies) — the "what to learn next" axis, orthogonal to the formulation
 choice above.
 
@@ -446,22 +446,22 @@ for each time step:
 
 | Concept (Shabana) | Equation | Code |
 |---|---|---|
-| Body coordinates `[Rx,Ry,θ]` | §1 | `link2index` |
-| Rotation matrix `A(θ)` | §1 | `ATransformMatrix` |
-| `A_θ`, identity `A_θθ=−A` | §1 | `ATransformMatrixTHETA` |
-| Local→global point `r=R+Aū` | §2 | `local2global` |
-| Revolute constraint `r_i=r_j` | §3 | `revolutJoint`, `constraintEquation` |
-| Constraint Jacobian `C_q` | §4 | `jacobianMatrix` |
-| Dependent/independent split | §4 | partition in `jacobianMatrix` / `mainProg` |
-| Newton–Raphson position | §5a | `positionAnalysis` |
-| Velocity `q̇_d = −C_qd⁻¹C_qi q̇_i` | §5b | `mainProg` (`Cdi`) |
-| Quadratic velocity `Q_d` | §6 | `QdCalc1`, `QdCalc2` |
-| Augmented EOM `[M Cqᵀ;Cq 0]` | §7 | `systemEquation` |
-| Mass matrix `diag(m,m,J)` | §7 | `massMatrix` |
-| Rod inertia `mL²/12` | §7 | `inertiaRod` |
-| Gravity / spring / damper `Q_e` | §8 | `systemEquation`, `forceModule` |
-| Reaction forces from `λ` | §9 | `mainProg` (`FReact_allTime`) |
-| RK4 integration | §10 | `rungeKutta4_AtTimeNow` |
+| Body coordinates `[Rx,Ry,θ]` | Section 1 | `link2index` |
+| Rotation matrix `A(θ)` | Section 1 | `ATransformMatrix` |
+| `A_θ`, identity `A_θθ=−A` | Section 1 | `ATransformMatrixTHETA` |
+| Local→global point `r=R+Aū` | Section 2 | `local2global` |
+| Revolute constraint `r_i=r_j` | Section 3 | `revolutJoint`, `constraintEquation` |
+| Constraint Jacobian `C_q` | Section 4 | `jacobianMatrix` |
+| Dependent/independent split | Section 4 | partition in `jacobianMatrix` / `mainProg` |
+| Newton–Raphson position | Section 5a | `positionAnalysis` |
+| Velocity `q̇_d = −C_qd⁻¹C_qi q̇_i` | Section 5b | `mainProg` (`Cdi`) |
+| Quadratic velocity `Q_d` | Section 6 | `QdCalc1`, `QdCalc2` |
+| Augmented EOM `[M Cqᵀ;Cq 0]` | Section 7 | `systemEquation` |
+| Mass matrix `diag(m,m,J)` | Section 7 | `massMatrix` |
+| Rod inertia `mL²/12` | Section 7 | `inertiaRod` |
+| Gravity / spring / damper `Q_e` | Section 8 | `systemEquation`, `forceModule` |
+| Reaction forces from `λ` | Section 9 | `mainProg` (`FReact_allTime`) |
+| RK4 integration | Section 10 | `rungeKutta4_AtTimeNow` |
 
 ---
 
@@ -539,5 +539,5 @@ the page count.
 The ❌ rows are not "advanced footnotes" — they are the other 80% of the books,
 and they are where the robotics-specific depth lives (O(n) dynamics for control,
 3D for real manipulators, flexibility for real structures). But **none of them
-make sense without §1–11 above**, which is exactly why this repo is good proof
+make sense without Sections 1–11 above**, which is exactly why this repo is good proof
 that the foundation is real. It's the 20% that unlocks reading the rest.
