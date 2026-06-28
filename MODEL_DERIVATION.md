@@ -21,10 +21,10 @@ Solve it at each instant for the accelerations `q̈` and the Lagrange
 multipliers `λ`:
 
 $$
-\begin{bmatrix} M & C_q^{\mathsf T} \\[2pt] C_q & 0 \end{bmatrix}
-\begin{bmatrix} \ddot q \\[2pt] \lambda \end{bmatrix}
+\begin{bmatrix} M & C_q^{\mathsf T} \\ C_q & 0 \end{bmatrix}
+\begin{bmatrix} \ddot{q} \\ \lambda \end{bmatrix}
 =
-\begin{bmatrix} Q_e \\[2pt] Q_d \end{bmatrix}
+\begin{bmatrix} Q_e \\ Q_d \end{bmatrix}
 $$
 
 Read it as: *(top row)* Newton's law with the joint reaction forces `C_qᵀλ`
