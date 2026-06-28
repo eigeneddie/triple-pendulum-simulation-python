@@ -96,9 +96,9 @@ The 3 DOF will be the three link angles `θ₁, θ₂, θ₃`.
 
 Absolute (Cartesian) coordinates, **3 per body** = COM position + orientation:
 
-$$
+```math
 q = \big[\, \underbrace{R_{x1},R_{y1},\theta_1}_{\text{body 1}},\ \underbrace{R_{x2},R_{y2},\theta_2}_{\text{body 2}},\ \underbrace{R_{x3},R_{y3},\theta_3}_{\text{body 3}} \,\big]^{\mathsf T}, \qquad n = 9
-$$
+```
 
 Angles `θ_i` measured from the global vertical (world +y), positive CCW.
 
@@ -132,9 +132,9 @@ and `sᵢ = sin θᵢ`, `cᵢ = cos θᵢ`.
 Using `rᵢᴾ = Rᵢ + A(θᵢ) ūᵢᴾ` with
 `A(θ) = [[c, −s], [s, c]]`, work out each one (this is the algebra you'd grind on paper):
 
-$$
+```math
 A(\theta)\begin{bmatrix}0\\ \pm h\end{bmatrix} = \begin{bmatrix} \mp h\, s \\ \pm h\, c \end{bmatrix}
-$$
+```
 
 | Point | Global position `r` |
 |---|---|
@@ -202,17 +202,17 @@ form once, then just substitute the specific bodies/points.
 `i` and `j` says: *the point P on body i and the point P on body j are the same
 point in space.* That's a 2-D vector equation (⇒ 2 scalar constraints):
 
-$$
+```math
 \boxed{\;C^{rev}_{ij} = r_i^{P} - r_j^{P} = \big(R_i + A(\theta_i)\,\bar u_i^{P}\big) - \big(R_j + A(\theta_j)\,\bar u_j^{P}\big) = \mathbf{0}\;}
-$$
+```
 
 **Ground (fixed-pin) joint — the special case.** When one of the two bodies is
 the inertial frame, its point is just a constant location `c` (no `R`, no `A`),
 so the master equation degenerates to:
 
-$$
+```math
 C^{grd}_{i} = r_i^{P} - c = R_i + A(\theta_i)\,\bar u_i^{P} - c = \mathbf{0}
-$$
+```
 
 Everything in Step 4 is one of these two. To instantiate, you only plug in:
 **(1)** which bodies, **(2)** their local points `ū` (from Step 2), and **(3)**
@@ -230,28 +230,28 @@ The ground pin fixes A to the world origin (`c = O = [0,0]`); each revolute make
 the two coincident points equal. Applying the recipe gives six scalar equations:
 
 **Joint A** = `C^grd₁` with `P = A`, `c = 0` (`r₁ᴬ = 0`):
-$$
+```math
 \begin{aligned}
 C_1 &: R_{x1} - a\,s_1 = 0\\
 C_2 &: R_{y1} + a\,c_1 = 0
 \end{aligned}
-$$
+```
 
 **Joint B** = `C^rev₁₂` with `P = B` (`r₁ᴮ − r₂ᴮ = 0`):
-$$
+```math
 \begin{aligned}
 C_3 &: R_{x1} - R_{x2} + a\,s_1 + b\,s_2 = 0\\
 C_4 &: R_{y1} - R_{y2} - a\,c_1 - b\,c_2 = 0
 \end{aligned}
-$$
+```
 
 **Joint C** = `C^rev₂₃` with `P = C` (`r₂ᶜ − r₃ᶜ = 0`):
-$$
+```math
 \begin{aligned}
 C_5 &: R_{x2} - R_{x3} + b\,s_2 + d\,s_3 = 0\\
 C_6 &: R_{y2} - R_{y3} - b\,c_2 - d\,c_3 = 0
 \end{aligned}
-$$
+```
 
 So `C = [C₁ … C₆]ᵀ`, `nc = 6`. DOF `= 9 − 6 = 3` ✓ (matches Step 0).
 
@@ -271,7 +271,7 @@ Columns ordered `[R_{x1}, R_{y1}, θ₁ | R_{x2}, R_{y2}, θ₂ | R_{x3}, R_{y3}
 Useful sub-result (this is the `A_θ ū` block from §4):
 `∂(A(θ)ū)/∂θ = A_θ(θ) ū`, e.g. `∂r₁ᴬ/∂θ₁ = [−a c₁, −a s₁]`.
 
-$$
+```math
 C_q=\begin{bmatrix}
 1 & 0 & -a c_1 & 0 & 0 & 0 & 0 & 0 & 0\\
 0 & 1 & -a s_1 & 0 & 0 & 0 & 0 & 0 & 0\\
@@ -280,7 +280,7 @@ C_q=\begin{bmatrix}
 0 & 0 & 0 & 1 & 0 & b c_2 & -1 & 0 & d c_3\\
 0 & 0 & 0 & 0 & 1 & b s_2 & 0 & -1 & d s_3
 \end{bmatrix}
-$$
+```
 
 This is the matrix `constraintModuleTP.py:jacobianMatrix` builds block-by-block.
 Each `±I₂` is a translation block; each trig column is a `±A_θ(θ) ū` block.
@@ -290,7 +290,7 @@ independent. Then:
 - `C_{q_i}` = columns `{θ₁, θ₂, θ₃}` (cols 3, 6, 9) → **6×3**
 - `C_{q_d}` = the other 6 columns (the Cartesian `R`'s) → **6×6** (must be invertible)
 
-$$
+```math
 C_{q_d}=\begin{bmatrix}
 1&0&0&0&0&0\\0&1&0&0&0&0\\
 1&0&-1&0&0&0\\0&1&0&-1&0&0\\
@@ -304,7 +304,7 @@ C_{q_i}=\begin{bmatrix}
  0 & b c_2 & d c_3\\
  0 & b s_2 & d s_3
 \end{bmatrix}
-$$
+```
 
 (Note `C_{q_d}` is constant — a nice property of choosing the Cartesian coords as
 dependent.)
@@ -320,13 +320,13 @@ dependent.)
 quadratic-velocity vector built from the `A_θθ = −A` identity [§6]. For each joint
 `Q_d = θ̇ᵢ² A(θᵢ) ūᵢ − θ̇ⱼ² A(θⱼ) ūⱼ` (single body for A). Plugging the points:
 
-$$
+```math
 \begin{aligned}
 Q_d^{A} &= \dot\theta_1^{\,2}\,[\,-a s_1,\ a c_1\,]\\
 Q_d^{B} &= \dot\theta_1^{\,2}\,[\,a s_1,\ -a c_1\,] - \dot\theta_2^{\,2}\,[\,-b s_2,\ b c_2\,]\\
 Q_d^{C} &= \dot\theta_2^{\,2}\,[\,b s_2,\ -b c_2\,] - \dot\theta_3^{\,2}\,[\,-d s_3,\ d c_3\,]
 \end{aligned}
-$$
+```
 
 Stack: `Q_d = [Q_d^A ; Q_d^B ; Q_d^C]` (6×1). Each entry is a centripetal
 `ω²·(rotated arm)` term — no `θ̈` appears. → `QdCalc1`, `QdCalc2`.
@@ -337,10 +337,10 @@ Stack: `Q_d = [Q_d^A ; Q_d^B ; Q_d^C]` (6×1). Each entry is a centripetal
 
 COM coordinates ⇒ translation/rotation decouple ⇒ constant diagonal **9×9**:
 
-$$
+```math
 M = \mathrm{diag}(\,m_1, m_1, J_1,\ m_2, m_2, J_2,\ m_3, m_3, J_3\,),
 \qquad J_i = \tfrac{1}{12} m_i L_i^2
-$$
+```
 
 → `massMatrix`, `inertiaRod`.
 
@@ -351,19 +351,19 @@ $$
 Start at zero, then add each effect into the right slot.
 
 **Gravity** → into the `R_y` slots only (force at COM, no torque):
-$$
+```math
 Q_e^{(R_{y1})} = -m_1 g,\quad Q_e^{(R_{y2})} = -m_2 g,\quad Q_e^{(R_{y3})} = -m_3 g
-$$
+```
 
 **Torsional springs + rotational dampers** → into the `θ` slots. With rest angle
 `θ₀ = 0`, joint B couples (1,2) and joint C couples (2,3):
-$$
+```math
 \begin{aligned}
 Q_e^{(\theta_1)} &= -k_{rB}(\theta_1-\theta_2) - c_{rB}(\dot\theta_1-\dot\theta_2)\\
 Q_e^{(\theta_2)} &= +k_{rB}(\theta_1-\theta_2) - k_{rC}(\theta_2-\theta_3) + c_{rB}(\dot\theta_1-\dot\theta_2) - c_{rC}(\dot\theta_2-\dot\theta_3)\\
 Q_e^{(\theta_3)} &= +k_{rC}(\theta_2-\theta_3) + c_{rC}(\dot\theta_2-\dot\theta_3)
 \end{aligned}
-$$
+```
 
 The middle link gets contributions from **both** joints (the `±` reaction pairs).
 All other entries of `Q_e` are 0. → `forceModule.torSpring`, `forceModule.torDamp`,
@@ -376,12 +376,12 @@ assembled in `systemEquation`.
 Combine dynamics (`M q̈ + C_qᵀ λ = Q_e`) with acceleration constraints
 (`C_q q̈ = Q_d`) into one **(n+nc) × (n+nc) = 15×15** linear system:
 
-$$
+```math
 \begin{bmatrix} M & C_q^{\mathsf T} \\ C_q & 0 \end{bmatrix}
 \begin{bmatrix} \ddot q \\ \lambda \end{bmatrix}
 =
 \begin{bmatrix} Q_e \\ Q_d \end{bmatrix}
-$$
+```
 
 Solve at each instant for the 9 accelerations `q̈` and 6 multipliers `λ`.
 Joint reaction forces follow from `Q_c = −C_qᵀ λ` [§9]. → `systemEquation`.

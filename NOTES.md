@@ -117,9 +117,9 @@ This is exactly the sequence in `main_tp.py:mainProg()`.
 Each planar rigid body `i` is fully located by **three** generalized coordinates:
 the global position of its center of mass and its orientation angle.
 
-$$
+```math
 q_i = \begin{bmatrix} R_x^i \\ R_y^i \\ \theta^i \end{bmatrix}
-$$
+```
 
 For `nb` bodies the full coordinate vector has `n = 3·nb`. Here 3 links →
 **n = 9**. (See `main_tp.py:77`, `link2index` in `calcModuleTP.py:46`.)
@@ -131,27 +131,27 @@ For `nb` bodies the full coordinate vector has `n = 3·nb`. Here 3 links →
 Rotates a vector from the body (local) frame into the global frame
 (Shabana eq. for the planar direction cosine matrix):
 
-$$
+```math
 A(\theta) = \begin{bmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{bmatrix}
-$$
+```
 
 → `calcModuleTP.py:ATransformMatrix`
 
 ### Its derivative w.r.t. the angle, `A_θ`
 Used everywhere in the Jacobian and the quadratic-velocity term:
 
-$$
+```math
 A_\theta = \frac{\partial A}{\partial \theta}
 = \begin{bmatrix} -\sin\theta & -\cos\theta \\ \cos\theta & -\sin\theta \end{bmatrix}
-$$
+```
 
 → `calcModuleTP.py:ATransformMatrixTHETA`
 
 **Key identity used by the code (worth memorizing):**
 
-$$
+```math
 \frac{\partial^2 A}{\partial \theta^2} = -A(\theta)
-$$
+```
 
 This is *why* the quadratic-velocity vector `Qd` (Section 6) is built from
 `A` itself, not `A_θ`.
@@ -163,9 +163,9 @@ This is *why* the quadratic-velocity vector `Qd` (Section 6) is built from
 The global position of a material point `P` fixed on body `i` whose local
 position is `ū^P` (constant in the body frame):
 
-$$
+```math
 r_i^P = R_i + A(\theta_i)\,\bar{u}_i^P
-$$
+```
 
 → `calcModuleTP.py:local2global`
 
@@ -187,9 +187,9 @@ DOF. With `n = 9` coordinates and `nc = 6` constraints the system has
 The standard planar revolute joint forces two points — one on each body — to
 coincide. It supplies **2 scalar constraints**:
 
-$$
+```math
 C^{rev} = r_i^P - r_j^P = R_i + A_i\bar u_i^P - R_j - A_j\bar u_j^P = \mathbf{0}
-$$
+```
 
 → `constraintModuleTP.py:revolutJoint`
 
@@ -215,9 +215,9 @@ force computations.
 
 For a revolute constraint the block structure for the two bodies is:
 
-$$
+```math
 C_q = \big[\; \dots,\ \underbrace{I_{2\times2}}_{\partial/\partial R_i},\ \underbrace{A_{\theta,i}\,\bar u_i^P}_{\partial/\partial \theta_i},\ \dots,\ \underbrace{-I_{2\times2}}_{\partial/\partial R_j},\ \underbrace{-A_{\theta,j}\,\bar u_j^P}_{\partial/\partial \theta_j},\ \dots \;\big]
-$$
+```
 
 → `constraintModuleTP.py:jacobianMatrix` (builds the 6×9 matrix block by block).
 
@@ -225,9 +225,9 @@ $$
 Shabana splits `q` into **dependent** `q_d` and **independent** `q_i`
 coordinates and correspondingly partitions the Jacobian:
 
-$$
+```math
 C_q\,q = \big[\,C_{q_d}\ \ C_{q_i}\,\big]\begin{bmatrix} q_d \\ q_i \end{bmatrix}
-$$
+```
 
 - **Independent** = the three link angles `θ₁, θ₂, θ₃` (the 3 DOF, integrated in time).
 - **Dependent** = the six Cartesian positions `Rx, Ry` of each link (solved from constraints).
@@ -244,9 +244,9 @@ valid, non-singular choice of dependent coordinates).
 Given the independent coordinates, the dependent ones must satisfy `C(q)=0`.
 Because `C` is nonlinear in `θ`, solve iteratively:
 
-$$
+```math
 C_{q_d}\,\Delta q_d = -C(q) \qquad\Longrightarrow\qquad q_d \leftarrow q_d + \Delta q_d
-$$
+```
 
 Iterate until `‖Δq_d‖ < ε`.
 → `constraintModuleTP.py:positionAnalysis`, driven by the `while` loop in
@@ -256,19 +256,19 @@ Iterate until `‖Δq_d‖ < ε`.
 Differentiate `C(q)=0` once in time. For time-independent (scleronomic)
 constraints:
 
-$$
+```math
 C_q\,\dot q = 0 \;\;\Longrightarrow\;\; C_{q_d}\dot q_d + C_{q_i}\dot q_i = 0
 \;\;\Longrightarrow\;\; \dot q_d = \underbrace{-C_{q_d}^{-1} C_{q_i}}_{C_{di}}\;\dot q_i
-$$
+```
 
 → `main_tp.py:124–129` (`Cdi = inv(-Cq_dep) · Cq_indep`).
 
 ### (c) Acceleration analysis
 Differentiate once more. The accelerations satisfy:
 
-$$
+```math
 C_q\,\ddot q = Q_d
-$$
+```
 
 where `Q_d` is the **quadratic velocity vector** (Section 6). This is the lower
 block row of the augmented system in Section 7.
@@ -282,16 +282,16 @@ When you differentiate `C_q q̇ = 0` again you get
 `C_q q̈ + (C_q q̇)_q q̇ = 0`, so the right-hand side of the acceleration
 equation is:
 
-$$
+```math
 Q_d = -\left(C_q \dot q\right)_q \dot q \quad(\text{plus time terms, zero here})
-$$
+```
 
 For a revolute joint, carrying out the differentiation and using the identity
 `A_θθ = −A`, the messy term collapses to a clean form:
 
-$$
+```math
 Q_d = A(\theta_i)\,\dot\theta_i^{\,2}\,\bar u_i^P \;-\; A(\theta_j)\,\dot\theta_j^{\,2}\,\bar u_j^P
-$$
+```
 
 i.e. each body contributes a **centripetal** `ω²·(rotated local vector)` term.
 → `constraintModuleTP.py:QdCalc1` (ground joint, single body) and `QdCalc2`
@@ -307,21 +307,21 @@ i.e. each body contributes a **centripetal** `ω²·(rotated local vector)` term
 ### Concept
 For a constrained system, Lagrange's equations with multipliers give:
 
-$$
+```math
 M\ddot q + C_q^{\mathsf T}\lambda = Q_e
-$$
+```
 
 where `λ` are the **Lagrange multipliers** (one per constraint) and `C_qᵀ λ`
 is the **generalized constraint (reaction) force**. Coupling this with the
 acceleration constraint `C_q q̈ = Q_d` gives a single linear system solved each
 step for `[q̈, λ]`:
 
-$$
+```math
 \begin{bmatrix} M & C_q^{\mathsf T} \\ C_q & 0 \end{bmatrix}
 \begin{bmatrix} \ddot q \\ \lambda \end{bmatrix}
 =
 \begin{bmatrix} Q_e \\ Q_d \end{bmatrix}
-$$
+```
 
 This is **Shabana's augmented (or "embedded-multiplier") equation** — the exact
 matrix assembled in `main_tp.py:systemEquation` (the `massAugmented` matrix is
@@ -330,9 +330,9 @@ matrix assembled in `main_tp.py:systemEquation` (the `massAugmented` matrix is
 ### The mass matrix `M`
 For a planar rigid body the (constant, diagonal) mass matrix is:
 
-$$
+```math
 M_i = \begin{bmatrix} m_i & 0 & 0 \\ 0 & m_i & 0 \\ 0 & 0 & J_i \end{bmatrix}
-$$
+```
 
 Note: because absolute coordinates are taken at the **center of mass**, the
 translation and rotation **decouple** → no inertia coupling terms, `M` is
@@ -340,9 +340,9 @@ constant and diagonal. The system `M` is the block-diagonal stack of all bodies.
 → `calcModuleTP.py:massMatrix`, assembled from `massVector` in `main_tp.py:70`.
 
 ### Rod moment of inertia (about the centroid)
-$$
+```math
 J = \tfrac{1}{12}\,m L^2
-$$
+```
 → `calcModuleTP.py:inertiaRod`
 
 ---
@@ -355,28 +355,28 @@ The external/applied generalized force vector. Contributions in this model:
 Acts on each body's `y` coordinate (since coordinates are at the COM, weight maps
 straight into the `Ry` generalized force, no torque term):
 
-$$
+```math
 Q_e^{(y_i)} = -m_i g
-$$
+```
 → `main_tp.py:230–232`
 
 ### (b) Torsional (rotational) spring at a joint
 A spring between bodies `i` and `j` produces equal-and-opposite generalized
 torques proportional to the relative angle:
 
-$$
+```math
 Q^{spring}_{\theta_i} = -k_r(\theta_i - \theta_j - \theta_0),\qquad
 Q^{spring}_{\theta_j} = +k_r(\theta_i - \theta_j - \theta_0)
-$$
+```
 → `forceModule.py:torSpring`
 
 ### (c) Rotational damper at a joint
 Same structure, proportional to **relative angular velocity**:
 
-$$
+```math
 Q^{damp}_{\theta_i} = -c_r(\dot\theta_i - \dot\theta_j),\qquad
 Q^{damp}_{\theta_j} = +c_r(\dot\theta_i - \dot\theta_j)
-$$
+```
 → `forceModule.py:torDamp`
 
 Each joint's spring + damper torques are summed into the `θ` slots of `Q_e`.
@@ -392,9 +392,9 @@ A major practical reason to use the augmented formulation: the Lagrange
 multipliers `λ` directly give the **joint reaction (constraint) forces** for
 free, with no extra free-body diagrams. The generalized reaction force is:
 
-$$
+```math
 Q_c = -C_q^{\mathsf T}\lambda
-$$
+```
 
 The components of `λ` (solved as the lower `nc` entries of the augmented
 solution vector) correspond to the force pairs enforcing each joint.
@@ -412,9 +412,9 @@ position/velocity analysis above. The 3 second-order ODEs `θ̈ = f(θ, θ̇)` a
 written as 6 first-order ODEs (state `y = [θ, θ̇]`) and advanced with classic
 RK4:
 
-$$
+```math
 y_{n+1} = y_n + \tfrac{\Delta t}{6}\,(k_1 + 2k_2 + 2k_3 + k_4)
-$$
+```
 
 where each `k` evaluates the full constrained dynamics (re-running `config` to
 rebuild `C_q` at the trial state). → `main_tp.py:rungeKutta4_AtTimeNow`.
