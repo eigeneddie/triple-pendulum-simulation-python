@@ -13,6 +13,79 @@
 
 ---
 
+## Why this field exists (read this first)
+
+**The one-line point of computational multibody dynamics:** it turns "deriving
+the equations of motion" from a one-off feat of human cleverness into a
+*systematic algorithm a computer can run on any mechanism*. That shift — from
+bespoke derivation to a general, repeatable procedure — is the whole reason the
+discipline exists. Everything below is that procedure, applied to a 3-link toy.
+
+Why that matters:
+
+- **Hand derivation doesn't scale; the algorithm does.** You can derive a double
+  pendulum by hand. A car suspension, a humanoid, a spacecraft with deploying
+  panels — never. The *same* recipe here assembles `M, C_q, Q_e, Q_d` whether you
+  have 3 bodies or 3,000. The triple pendulum is small enough to see the recipe
+  you couldn't otherwise watch run.
+- **Most real dynamics have no closed form.** This pendulum is *chaotic* — there
+  is no formula `θ(t)`. Numerical integration is the only way to an answer, and
+  computational dynamics is the craft of making that integration correct, stable,
+  and efficient.
+- **It's the engine inside every physics tool.** MuJoCo, Bullet, Drake,
+  Pinocchio, Adams, Simscape, game engines — all implement these formulations.
+  This repo is a tiny hand-built version of what they do internally. Shabana
+  teaches *the engine behind the engine*.
+- **It's the foundation of robotics.** Control, state estimation, planning, and
+  model-based learning all need a *computable* equation of motion. You can't do
+  model-based control of a system whose dynamics you can't compute.
+
+> Classical mechanics (Lagrange, Hamilton) gives you the **principle**;
+> computational dynamics makes that principle **executable** — general, scalable,
+> numerically robust enough to run on real machines for real systems.
+
+### Where any one equation sits — the layer map
+
+Knowing which layer you're on prevents most conceptual confusion (e.g. "is the
+augmented form *the* equation of motion?" — no, it's one *formulation* of it):
+
+```
+PRINCIPLE        Newton's 2nd law / Hamilton's principle / D'Alembert
+   │             ── the actual physics; unique, not negotiable
+   ▼
+GOVERNING EQ.    rigid multibody → constrained Newton–Euler / Lagrange
+  (per domain)   fluids → Navier–Stokes   heat → diffusion eq.   (all = F=ma specialized)
+   │
+   ▼
+FORMULATION      augmented (this repo) | embedded/minimal | recursive O(n) |
+   │             Kane | Hamiltonian | penalty ...  ── a CHOICE of how to express/solve
+   ▼
+MODEL            THIS triple pendulum: specific M, C_q, Q_e, Q_d
+   │
+   ▼
+SCHEME           RK4, Newton–Raphson, the 15×15 augmented solve  ── how it runs on a machine
+```
+
+The **augmented formulation** this repo implements lives at the *formulation*
+layer: one valid way to express the dynamics, chosen because it's the most
+transparent to build from scratch. Its main siblings — all describing the *same*
+motion, differing only in cost and bookkeeping:
+
+| Formulation | Idea | Trade-off |
+|---|---|---|
+| **Augmented** (this repo) | keep all coords + explicit multipliers `λ` | uniform, easy to assemble, gives reactions free; larger, indefinite system |
+| **Embedded / minimal** | eliminate `λ`, reduce to independent coords (the 3 angles) | small system; messier to derive, loses reaction forces |
+| **Recursive O(n)** (Featherstone) | propagate body-to-body | linear-time; the robotics workhorse (see §13) |
+| **Kane / Gibbs–Appell** | generalized speeds, skip constraint forces | compact; common in spacecraft/robotics |
+| **Hamiltonian** | first-order in position + momentum | structure/energy-preserving integration |
+| **Penalty** | replace hard constraints with stiff springs | no `λ`, trivial to code; stiff, approximate |
+
+§13 then covers the *extensions* of this same machinery (3D, stabilization,
+flexible bodies) — the "what to learn next" axis, orthogonal to the formulation
+choice above.
+
+---
+
 ## 0. The big picture
 
 A constrained multibody system is described by:
