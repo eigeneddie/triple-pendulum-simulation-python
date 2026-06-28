@@ -20,12 +20,12 @@ cardinal equation of constrained multibody dynamics (the *augmented* form).
 Solve it at each instant for the accelerations `q̈` and the Lagrange
 multipliers `λ`:
 
-$$
+```math
 \begin{bmatrix} M & C_q^{\mathsf T} \\ C_q & 0 \end{bmatrix}
 \begin{bmatrix} \ddot{q} \\ \lambda \end{bmatrix}
 =
 \begin{bmatrix} Q_e \\ Q_d \end{bmatrix}
-$$
+```
 
 Read it as: *(top row)* Newton's law with the joint reaction forces `C_qᵀλ`
 added; *(bottom row)* the requirement that accelerations keep the joints
