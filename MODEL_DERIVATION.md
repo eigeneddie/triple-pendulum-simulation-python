@@ -442,20 +442,311 @@ Joint reaction forces follow from `Q_c = −C_qᵀ λ` [Section 9]. → `systemE
 
 ---
 
-## Step 10 — Solution plan (what the time loop must do) [Sections 5, 10–11]
+## Step 10 — The time loop, derived step by step [Sections 5, 10–11]
 
 Only `θ₁, θ₂, θ₃` (and their rates) are integrated; everything else is recovered
-from the constraints each step. On paper, decide this order *before* coding:
+from the constraints each step. This section is the full anatomy of the `for`
+loop in `mainProg()` — **for each step: the goal, the derivation of its formula
+from scratch, and the code**. The four derivations are really just `C(q)=0`
+seen at four levels: *position* (`C=0`), *velocity* (`Ċ=0`), *acceleration*
+(`C̈=0`), and *time integration*.
 
-1. **Position:** given the independent angles, Newton–Raphson on
-   `C_{q_d} Δq_d = −C` until `‖Δq_d‖ < ε` → dependent Cartesian positions.
-2. **Velocity:** `q̇_d = −C_{q_d}⁻¹ C_{q_i} q̇_i` (one linear solve).
-3. **Acceleration / forces:** solve the 15×15 augmented system → `q̈`, `λ`.
-4. **Integrate:** advance `[θ, θ̇]` to `t+Δt` with RK4 (re-form `C_q` at each stage).
-5. Repeat.
+**Carried state and outputs.** Three vectors persist across steps: `qi`
+(9 positions), `qiDot` (9 velocities), `qiDotDot_lamda` (15 = 9 accelerations +
+6 multipliers). Each step fills four output arrays — these *are* the solution:
+
+| Output array | Holds | Source |
+|---|---|---|
+| `q_allTime` | positions (9) | recovered `qi` |
+| `v_allTime` | velocities (9) | recovered `qiDot` |
+| `a_allTime` | accelerations (9) | first 9 of the augmented solve |
+| `FReact_allTime` | reaction multipliers `λ` (6) | last 6 of the augmented solve |
+
+**What is known at the top of a step.** Only the 3 angles and their rates
+(`θ`, `θ̇`) are authoritative — RK4 advanced them last step. The 6 dependent
+Cartesian coordinates are stale and must be rebuilt. So every step is: *recover
+everything from the angles → solve → push the angles forward.*
+
+**The loop skeleton** (labels match the code comments in `mainProg`):
+
+```
+for each timestep t:
+    (a) position analysis   → dependent POSITIONS  @ t    (Newton–Raphson loop)
+    (b) velocity analysis   → dependent VELOCITIES @ t    (one linear solve)
+    (c) augmented solve     → ACCELERATIONS q̈ + reactions λ @ t
+    (d) store q, q̇, q̈, λ
+    (e) RK4 integration     → independent θ, θ̇  @ t+Δt
+```
 
 Initial conditions: set `θ₁,θ₂,θ₃` (here `π/4, π/3, π/2`), velocities 0; run one
-position analysis to get a consistent starting configuration.
+position analysis (a) once to get a consistent starting configuration.
+
+---
+
+### (a) Position analysis — recover dependent positions
+
+**Goal.** Find the 6 dependent Cartesian coords that make the joints intact
+(`C(q)=0`) for the current (fixed) angles.
+
+**Derivation.** This is **Newton–Raphson**, the first-order-approximation idea.
+We have a guess where the joints are slightly *open* by the violation vector
+`C ≠ 0`. Take the first-order Taylor expansion of `C` and demand the corrected
+point close the joints:
+
+```math
+C(q + \Delta q) \approx C(q) + C_q\,\Delta q = 0
+\;\;\Longrightarrow\;\;
+\Delta q = -\,C_q^{-1}\,C(q)
+```
+
+`C` is "how far off the joints are"; `C_qd⁻¹` converts that violation into "how
+far to move the coordinates to close it"; the minus sign moves *opposite* to the
+violation. It's the vector form of Newton's `x ← x − f/f'`.
+
+**Why iterate until `‖Δq‖ < ε`.** The Taylor expansion is only first-order — a
+straight-line estimate of a curved function — so for nonlinear `C` one step gets
+closer but not exact. Recompute `C`, step again, until the correction drops below
+tolerance `ε` (= "stopped moving → `C ≈ 0`"). It's `ε` not `0` because floating
+point can't hit zero. (`max_iteration` caps the loop.) **Here it converges in one
+step**, because with angles fixed the constraints are *linear* in the Cartesian
+unknowns — `C_qd` from Step 5 is the constant `±1` matrix, no trig — so the
+first-order step is exact.
+
+**Code.** The single Newton step (`constraintModuleTP.py`):
+
+```python
+def positionAnalysis(constraintVector, jacobianMatrix, qi):
+    inverse_jacobian = np.linalg.inv(jacobianMatrix)            # C_qd⁻¹
+    delta_qi = - np.matmul(inverse_jacobian, constraintVector)  # Δq = −C_qd⁻¹ · C
+    delta_qi_norm = np.linalg.norm(delta_qi)                    # ‖Δq‖  (for the ε test)
+    qi = qi + delta_qi                                          # q ← q + Δq
+    return qi, delta_qi_norm
+```
+
+The `until ‖Δq‖ < ε` loop wrapping it (`main_tp.py`):
+
+```python
+delta_qDep_norm = 1
+while delta_qDep_norm > epsilon:                               # repeat until converged
+    Cq, Cq_dep, Cq_indep, constraintVect = config(qi)         # rebuild C and C_q at current guess
+    q_dep = np.concatenate((qi[0:2], qi[3:5], qi[6:8]))       # the 6 dependent positions (Rx,Ry)
+    q_depNew, delta_qDep_norm = conMod.positionAnalysis(      # one Newton step → new q_dep, ‖Δq‖
+        constraintVect, Cq_dep, q_dep)
+    if (delta_qDep_norm < epsilon) or (count > max_iteration): # converged, or safety cap
+        break
+qi[0:2], qi[3:5], qi[6:8] = q_depNew[0:2], q_depNew[2:4], q_depNew[4:6]  # store back
+```
+
+`constraintVect`=`C`, `Cq_dep`=`C_qd`, `epsilon`=`ε`. The slices `[0:2],[3:5],
+[6:8]` are each link's `(Rx,Ry)`; the angle indices `2,5,8` are held fixed.
+
+---
+
+### (b) Velocity analysis — recover dependent velocities
+
+**Goal.** Given the 3 angular velocities, find the 6 dependent Cartesian
+velocities that keep the joints intact *as they move*.
+
+**Derivation.** "Joints stay closed for all time" means `C(q(t)) = 0` for every
+`t`. Differentiate once in time (chain rule). For our time-independent
+constraints there is no explicit `∂C/∂t` term, so:
+
+```math
+\frac{d}{dt}\,C(q(t)) = C_q\,\dot q = 0
+```
+
+Now split the coordinates into dependent and independent columns
+(`C_q q̇ = C_qd q̇_dep + C_qi q̇_indep`) and solve for the unknown dependent part:
+
+```math
+C_{qd}\,\dot q_{dep} + C_{qi}\,\dot q_{indep} = 0
+\;\;\Longrightarrow\;\;
+\dot q_{dep} = -\,C_{qd}^{-1}\,C_{qi}\,\dot q_{indep}
+```
+
+This is **linear and exact** — one solve, no iteration — because `C_qd`, `C_qi`
+are already known from the positions found in (a), and `q̇_indep` is the known
+angular velocity. (Same `C_q q̇ = 0` appears in Section 5; it is also the velocity
+form whose *derivative* gives the acceleration constraint in (c).)
+
+**Code** (`main_tp.py`):
+
+```python
+qDot_indep = np.concatenate((qiDot[2:3], qiDot[5:6], qiDot[8:9]))  # the 3 angular rates θ̇
+Cdi      = np.dot(np.linalg.inv(-Cq_dep), Cq_indep)               # Cdi = −C_qd⁻¹ · C_qi
+qDot_dep = np.dot(Cdi, qDot_indep)                               # q̇_dep = Cdi · θ̇
+qiDot[0:2], qiDot[3:5], qiDot[6:8] = \
+    qDot_dep[0:2], qDot_dep[2:4], qDot_dep[4:6]                  # store back into qiDot
+```
+
+`Cdi` is literally the matrix `−C_qd⁻¹ C_qi`.
+
+---
+
+### (c) Acceleration & reactions — the augmented solve
+
+**Goal.** Find the 9 accelerations `q̈` and the 6 reaction multipliers `λ` at
+this instant.
+
+**Derivation — part 1, the acceleration constraint.** Differentiate the velocity
+constraint `C_q q̇ = 0` once more in time (product rule):
+
+```math
+\frac{d}{dt}\big(C_q\,\dot q\big) = C_q\,\ddot q + \dot C_q\,\dot q = 0
+\;\;\Longrightarrow\;\;
+C_q\,\ddot q = -\,\dot C_q\,\dot q \;\equiv\; Q_d
+```
+
+So the accelerations are *not free* — they must satisfy `C_q q̈ = Q_d`, where
+`Q_d` (the **quadratic-velocity vector**) collects the leftover `q̇`-terms. For
+this model the only time-varying part of `C_q` is each `A_θ(θ)·ū` block. Its time
+derivative is:
+
+```math
+\frac{d}{dt}\big[A_\theta(\theta)\,\bar u\big]
+= A_{\theta\theta}\,\dot\theta\,\bar u
+= -A(\theta)\,\dot\theta\,\bar u
+```
+
+using the `A_θθ = −A` identity (Step 6). Working `−Ċ_q q̇` through for a joint
+point gives the centripetal term `θ̇²·A(θ)·ū` — exactly `QdCalc1` (single body)
+and `QdCalc2` = `θ̇ᵢ²·Aᵢ·ūᵢ − θ̇ⱼ²·Aⱼ·ūⱼ` (two bodies).
+
+**Derivation — part 2, stack with the dynamics.** The dynamics (Step 9 /
+"destination") give `M q̈ + C_qᵀ λ = Q_e`. Stacking it with the acceleration
+constraint above yields one linear system in the unknowns `q̈` and `λ`:
+
+```math
+\begin{bmatrix} M & C_q^{\mathsf T} \\ C_q & 0 \end{bmatrix}
+\begin{bmatrix} \ddot q \\ \lambda \end{bmatrix}
+=
+\begin{bmatrix} Q_e \\ Q_d \end{bmatrix}
+```
+
+15×15 here (`9 + 6`). Invert → `q̈` (first 9) and `λ` (last 6).
+
+**Code** (`main_tp.py`, trimmed):
+
+```python
+def systemEquation(t, Cq, qi, qiDot):
+    # --- augmented matrix  [ M  Cqᵀ ; Cq  0 ] ---
+    massAugmented[0:massSize, 0:massSize]      = mass_Matrix       # M    (top-left)
+    massAugmented[0:massSize, massSize:matDim] = np.transpose(Cq)  # Cqᵀ  (top-right)
+    massAugmented[massSize:matDim, 0:massSize] = Cq                # Cq   (bottom-left)
+    #                                            bottom-right stays 0
+
+    # --- right-hand side  [ Qe ; Qd ] ---
+    Qe = np.zeros((massSize, 1))
+    Qe[l2i(1,"y")] = -mass1*gravity                    # gravity → Ry slots
+    Qe[l2i(2,"y")] = -mass2*gravity
+    Qe[l2i(3,"y")] = -mass3*gravity
+    Qe[l2i(2,"theta")] = QSpring2B + QSpring2C + QDamp2B + QDamp2C  # middle link: BOTH joints
+
+    Qd1 = conMod.QdCalc1(qi, qiDot, u_bar_1A, 1)               # joint A
+    Qd2 = conMod.QdCalc2(qi, qiDot, u_bar_1B, u_bar_2B, 1, 2)  # joint B
+    Qd3 = conMod.QdCalc2(qi, qiDot, u_bar_2C, u_bar_3C, 2, 3)  # joint C
+    Qd  = np.concatenate((-Qd1, Qd2, Qd3))                     # quadratic-velocity vector
+
+    QeAug = np.concatenate((Qe, Qd))                           # [ Qe ; Qd ]  (15×1)
+    qiDotDot_lamda = np.dot(np.linalg.inv(massAugmented), QeAug)  # solve → [ q̈ ; λ ]
+    return qiDotDot_lamda
+```
+
+The `Q_d` centripetal helper itself:
+
+```python
+def QdCalc1(qi, qiDot, u_bar_iP, i):                  # constraintModuleTP.py (joint A)
+    id = link2index(i, "theta")
+    return np.square(float(qiDot[id])) * np.dot(A_i(qi[id]), u_bar_iP)   # θ̇² · A(θ)·ū
+```
+
+---
+
+### (d) Store
+
+`q_allTime ← qi`, `v_allTime ← qiDot`, `a_allTime ← qiDotDot_lamda[0:9]`,
+`FReact_allTime ← qiDotDot_lamda[9:15]`. The full instantaneous answer
+(position, velocity, acceleration, reactions) is now recorded.
+
+---
+
+### (e) Integrate — RK4
+
+**Goal.** Advance the independent state `y = [θ, θ̇]` from `t` to `t+Δt`.
+
+**Derivation.** The 3 angles obey a first-order ODE in the stacked state
+`y = [θ, θ̇]`:
+
+```math
+\dot y = f(y) = \begin{bmatrix} \dot\theta \\ \ddot\theta(y) \end{bmatrix}
+```
+
+where `θ̇` is just the lower half of `y`, and `θ̈` comes from the augmented solve
+(c) evaluated at `y`. Classical 4th-order Runge–Kutta advances it with a weighted
+average of four slope evaluations:
+
+```math
+k_1 = f(y),\;\; k_2 = f\!\big(y+\tfrac{\Delta t}{2}k_1\big),\;\;
+k_3 = f\!\big(y+\tfrac{\Delta t}{2}k_2\big),\;\; k_4 = f\!\big(y+\Delta t\,k_3\big)
+```
+```math
+y(t+\Delta t) = y + \frac{\Delta t}{6}\big(k_1 + 2k_2 + 2k_3 + k_4\big)
+```
+
+Because each `f` evaluation needs `θ̈`, **RK4 calls the augmented solve (c) four
+times per step** (re-forming `C_q` at each trial state) — separate from the one
+solve in (c) that gets *recorded*.
+
+**Code** (`main_tp.py`, first stage shown; k2/k3/k4 repeat at the trial points):
+
+```python
+def rungeKutta4_AtTimeNow(qi, qiDot, systemFunction, stepSize, timeNow):
+    x    = [θ₁, θ₂, θ₃]                       # independent positions  (from qi)
+    xDot = [θ̇₁, θ̇₂, θ̇₃]                      # independent velocities (from qiDot)
+    y    = np.concatenate((x, xDot))          # the 6-vector state
+
+    Cq, _, _, _ = config(qi)                   # rebuild C_q at this state
+    f_1 = systemFunction(t1, Cq, qi, qiDot)    # augmented solve → accelerations
+    for x in range(numberOfDOF):
+        k1[x]             = y[x + numberOfDOF] # dθ/dt = θ̇  (top half = f(y))
+        k1[x+numberOfDOF] = f_1[l2i(x+1,"theta")]   # dθ̇/dt = θ̈ (from the solve)
+    # ... k2, k3, k4: write trial θ,θ̇ into qi/qiDot, config(), systemFunction() again ...
+
+    yNew = y + stepSize*(k1 + 2*k2 + 2*k3 + k4)/6   # weighted RK4 step
+    # write yNew back into the θ, θ̇ slots of qi, qiDot
+    return qi, qiDot
+```
+
+Only the angle/rate slots of `qi`/`qiDot` are updated; the Cartesian slots get
+rebuilt by (a) and (b) at the start of the next step.
+
+---
+
+### The whole loop at a glance
+
+```
+known: θ, θ̇  ──(a)──► dependent positions  ──(b)──► dependent velocities
+        │                                                      │
+        └──────────────(c) augmented solve ◄───────────────────┘
+                          │  → accelerations q̈ + reactions λ
+                          ▼
+              (d) store  →  (e) RK4 advances θ, θ̇ to t+Δt  → repeat
+```
+
+**The insight worth keeping.** For *this* model, `M`, `C_q`, `Q_e`, `Q_d` depend
+**only on the angles and angular velocities** — never on the Cartesian
+coordinates (`M` is constant because reference points are at the COM; `C_q` is
+`A_θ(θ)·ū`; forces are gravity + torsional terms). So the 3 independent angular
+DOF form a **self-contained ODE**: RK4 marching `(θ, θ̇)` is fully correct on its
+own. Steps (a) and (b) exist mainly to **reconstruct the Cartesian trajectories
+for output and reaction forces**, not to drive the integration. (Add a
+*translational* spring between two points and that breaks — Cartesian positions
+would then feed back into `Q_e`.)
+
+So the "we get position, velocity, acceleration" memory is the **output** view;
+the mechanism is: *integrate the few real DOF (angles), reconstruct the rest from
+geometry, and solve the augmented system for accelerations and joint forces at
+each instant.*
 
 ---
 
